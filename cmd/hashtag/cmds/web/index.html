@@ -62,11 +62,6 @@
 <div id="hashtags-div"></div>
 
 <script>
-    function score(hashtag) {
-        // sum hashtag.score
-        return hashtag.Scores.reduce((a, b) => a + b, 0);
-    }
-
     function updateHashtags() {
         var inputField = document.getElementById("input-field");
         var inputValue = inputField.value;
@@ -88,19 +83,22 @@
                 hashtagsDiv.appendChild(hashtags);
 
                 // sort hashtags by score
-                data.hashtags.sort((a, b) => score(b) - score(a));
                 data.hashtags.forEach((hashtag, idx) => {
                     var hashtagItem = document.createElement("li");
 
                     var hashtagScoreList = document.createElement("ul");
 
                     // render Words - Tag
-                    const {Words, Tag, Scores} = hashtag;
-                    hashtagItem.innerHTML = "" + idx + " - " + Tag + " (" + Words + " words)";
+                    const {words, tag, score, scores} = hashtag;
+                    hashtagItem.innerHTML = "" + idx + " - " + tag + " (" + score.toFixed(2) + " score)";
 
                     const heuristicScoreItem = document.createElement("li");
-                    heuristicScoreItem.innerHTML = "Heuristic Score: " + score(hashtag).toFixed(2);
-                    heuristicScoreItem.innerHTML += " (" + Scores.map(s => s.toFixed(2)).join(", ") + ")";
+                    heuristicScoreItem.innerHTML = "Heuristic Score: " + score.toFixed(2);
+                    words.forEach((word, idx) => {
+                        const wordScoreItem = document.createElement("li");
+                        wordScoreItem.innerHTML = "Word " + idx + ": " + word + " - " + scores[idx].toFixed(2);
+                        hashtagScoreList.appendChild(wordScoreItem);
+                    });
                     hashtagScoreList.appendChild(heuristicScoreItem);
                     hashtagItem.appendChild(hashtagScoreList);
 

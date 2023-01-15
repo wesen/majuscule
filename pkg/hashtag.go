@@ -82,15 +82,17 @@ func ComputeMatches(s string, matches []*ahocorasick.Match, frequency map[string
 }
 
 type HashTag struct {
-	Tag    string
-	Words  int
+	Words  []string
 	Scores []float64
 }
 
-func NewHashTag(tag string, scores []float64) *HashTag {
+func (ht *HashTag) Tag() string {
+	return strings.Join(ht.Words, "")
+}
+
+func NewHashTag(words []string, scores []float64) *HashTag {
 	return &HashTag{
-		Tag:    tag,
-		Words:  len(scores),
+		Words:  words,
 		Scores: scores,
 	}
 }
@@ -102,7 +104,7 @@ func (ht *HashTag) Score() float64 {
 	for _, s := range ht.Scores {
 		score += s
 	}
-	return score
+	return score / float64(len(ht.Scores))
 }
 
 func (ht *HashTag) String() string {
@@ -115,14 +117,20 @@ func (ht *HashTag) String() string {
 
 func (ht *HashTag) AppendMatch(match string, score float64) *HashTag {
 	return NewHashTag(
-		ht.Tag+capitalize(match),
+		append(ht.Words, capitalize(match)),
 		append(ht.Scores, score),
 	)
 }
 
+func (ht *HashTag) Prepend(match string, score float64) *HashTag {
+	return NewHashTag(
+		append([]string{capitalize(match)}, ht.Words...),
+		append([]float64{score}, ht.Scores...),
+	)
+}
 func (ht *HashTag) AppendMatchWithSuffix(match string, matchScore float64, suffix *HashTag) *HashTag {
 	return NewHashTag(
-		ht.Tag+capitalize(match)+suffix.Tag,
+		append(append(ht.Words, capitalize(match)), suffix.Words...),
 		append(append(ht.Scores, matchScore), suffix.Scores...),
 	)
 }
@@ -175,7 +183,7 @@ func (sm *StringMatches) createInitialToGoStack() *toGoStack {
 	if len(sm.AllMatches) > 0 {
 		for i := len(sm.AllMatches[0]) - 1; i >= 0; i-- {
 			match := sm.AllMatches[0][i]
-			stack.Push(NewToGoStackEntry(NewHashTag("", []float64{}), match))
+			stack.Push(NewToGoStackEntry(NewHashTag([]string{}, []float64{}), match))
 		}
 	}
 
@@ -235,17 +243,8 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 		matchString := cur.matchString
 		curPos := cur.pos
 
-		capitalizedSuffix := capitalize(matchString) + suffix.Tag
 		newHashTag := cur.prefix.AppendMatchWithSuffix(matchString, cur.score, suffix)
-
-		suffixHashTag := &HashTag{
-			Tag:   capitalizedSuffix,
-			Words: 1 + suffix.Words,
-			Scores: append(
-				[]float64{cur.score},
-				suffix.Scores...,
-			),
-		}
+		suffixHashTag := suffix.Prepend(capitalize(matchString), cur.score)
 
 		_, ok := cache[curPos]
 		if !ok {
@@ -299,10 +298,7 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 		// hashtag to the cache at cur.pos, and add to the results
 		// (sorted by score)
 		if nextPos >= len(sm.String) {
-			appendResult(cur, &HashTag{
-				Tag:   "",
-				Words: 0,
-			})
+			appendResult(cur, NewHashTag([]string{}, []float64{}))
 		} else {
 			// we now "recurse" by adding all the matches at the next position to the toGo,
 			// if they could potentially lead to lower scores than maxScore
@@ -351,7 +347,7 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 		// score here could be score of the individual words, but inverse to the total count of words, or something like that ?
 		// or maybe just average score of all words / number of words ?
 		if ret[i].Score() == ret[j].Score() {
-			return ret[i].Tag > ret[j].Tag
+			return ret[i].Tag() > ret[j].Tag()
 		} else {
 			return ret[i].Score() > ret[j].Score()
 		}
@@ -423,7 +419,7 @@ func (sm *StringMatches) ComputeHashTags(pos int) []*HashTag {
 
 	if pos >= len(sm.String) {
 		return []*HashTag{
-			NewHashTag("", []float64{}),
+			NewHashTag([]string{}, []float64{}),
 		}
 	}
 
@@ -439,29 +435,12 @@ func (sm *StringMatches) ComputeHashTags(pos int) []*HashTag {
 		for _, suffix := range sm.ComputeHashTags(pos + len(s)) {
 			// we try to capitalize the first letter of the suffix
 			// and then add it to the current match
-
-			// we should try to do something about single letter words here
-			// we try not to capitalize single letter words
-			var s_ string
-			//if len(s) > 1 {
-			//	if len(suffix.Tag) > 1 {
-			//		s_ = capitalize(s) + capitalize(suffix.Tag)
-			//	} else {
-			//		s_ = capitalize(s) + suffix.Tag
-			//	}
-			//} else {
-			s_ = capitalize(s) + suffix.Tag
-			//}
-
-			ret = append(ret, &HashTag{
-				Tag:   s_,
-				Words: 1 + suffix.Words,
-			})
+			ret = append(ret, suffix.Prepend(capitalize(s), match.Score))
 		}
 	}
 
 	sort.Slice(ret, func(i, j int) bool {
-		return ret[i].Words < ret[j].Words
+		return ret[i].Score() > ret[j].Score()
 	})
 
 	sm.cache[pos] = ret

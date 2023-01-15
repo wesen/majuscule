@@ -26,10 +26,17 @@ type AhoCorasickMatch struct {
 	Score float64 `json:"score"`
 }
 
+type HashTag struct {
+	Tag    string    `json:"tag"`
+	Score  float64   `json:"score"`
+	Words  []string  `json:"words"`
+	Scores []float64 `json:"scores"`
+}
+
 type CompleteResponse struct {
 	Input              string              `json:"input"`
 	Count              int                 `json:"count"`
-	Hashtags           []*pkg.HashTag      `json:"hashtags"`
+	Hashtags           []*HashTag          `json:"hashtags"`
 	Matches            []*AhoCorasickMatch `json:"matches,omitempty"`
 	MatchDuration_ns   int64               `json:"match_duration_ns"`
 	SuggestDuration_ns int64               `json:"suggest_duration_ns"`
@@ -47,7 +54,7 @@ func (s *Server) computeHashtags(input string, count int) CompleteResponse {
 	results := CompleteResponse{
 		Input:    input,
 		Count:    count,
-		Hashtags: make([]*pkg.HashTag, 0),
+		Hashtags: make([]*HashTag, 0),
 		Matches:  make([]*AhoCorasickMatch, 0),
 	}
 
@@ -80,11 +87,19 @@ func (s *Server) computeHashtags(input string, count int) CompleteResponse {
 	start = time.Now()
 	matches := pkg.NewStringMatches(input, matches_)
 	hashTags := matches.SuggestHashtags()
-	if len(hashTags) > count {
-		results.Hashtags = hashTags[:count]
-	} else {
-		results.Hashtags = hashTags
+
+	for i, h := range hashTags {
+		if i > count {
+			break
+		}
+		results.Hashtags = append(results.Hashtags, &HashTag{
+			Tag:    h.Tag(),
+			Score:  h.Score(),
+			Words:  h.Words,
+			Scores: h.Scores,
+		})
 	}
+
 	elapsed = time.Since(start)
 	results.SuggestDuration_ns = elapsed.Nanoseconds()
 

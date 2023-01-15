@@ -17,8 +17,8 @@ func init() {
 
 	wordLists := []string{
 		"test_data/words",
-		//"test_data/words.txt",
-		//"test_data/google-10000-english-no-swears.txt",
+		"test_data/words.txt",
+		"test_data/google-10000-english-no-swears.txt",
 	}
 	rootCmd.PersistentFlags().StringSlice("dict", wordLists, "Dictionary file(s) to use")
 	rootCmd.PersistentFlags().String("frequency", "test_data/1_2_all_freq.txt", "Frequency file to use")

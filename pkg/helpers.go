@@ -21,13 +21,22 @@ func FormatMemorySize(alloc uint64) string {
 func BuildTrieFromFiles(paths []string) (*ahocorasick.Trie, error) {
 	builder := ahocorasick.NewTrieBuilder()
 	log.Debug().Msgf("Loading dictionaries...")
-	var err error
 	for _, path := range paths {
 		log.Debug().Str("file", path).Msg("Loading...")
-		err = builder.LoadStrings(path)
+		// load all lines from file and lowercase them
 
+		file, err := os.Open(path)
 		if err != nil {
 			return nil, err
+		}
+		defer file.Close()
+
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			text := scanner.Text()
+			if len(text) > 0 {
+				builder.AddString(strings.ToLower(text))
+			}
 		}
 	}
 
