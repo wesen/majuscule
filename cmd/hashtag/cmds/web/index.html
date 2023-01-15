@@ -83,10 +83,10 @@
                 hashtagsDiv.appendChild(hashtags);
 
                 data.hashtags.forEach((hashtag, idx) => {
-                    // render Words - String
-                    const {Words, String} = hashtag;
+                    // render Words - Tag
+                    const {Words, Tag} = hashtag;
                     var hashtagP = document.createElement("p");
-                    hashtagP.innerHTML = "" + idx + " - " + String + " (" + Words + " words)";
+                    hashtagP.innerHTML = "" + idx + " - " + Tag + " (" + Words + " words)";
                     hashtags.appendChild(hashtagP);
                 });
 

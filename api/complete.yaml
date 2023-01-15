@@ -60,7 +60,7 @@ components:
     HashTag:
       type: object
       properties:
-        name:
+        tag:
           type: string
         count:
           type: integer

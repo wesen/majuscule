@@ -66,7 +66,7 @@ var CompleteCmd = &cobra.Command{
 				obj := make(map[string]interface{})
 				obj["Input"] = response.Input
 				obj["Words"] = result.Words
-				obj["String"] = result.String
+				obj["String"] = result.Tag
 				err = gp.ProcessInputObject(obj)
 				cobra.CheckErr(err)
 			}

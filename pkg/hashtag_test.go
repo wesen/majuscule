@@ -81,7 +81,7 @@ func TestSingleLetterHashtag(t *testing.T) {
 	matches := NewStringMatches(s, trieMatches)
 	hashtags := matches.ComputeHashTags(0)
 	require.Equal(t, 1, len(hashtags))
-	assert.Equal(t, "A", hashtags[0].String)
+	assert.Equal(t, "A", hashtags[0].Tag)
 }
 
 func TestTwoLetterHashtag(t *testing.T) {
@@ -93,12 +93,12 @@ func TestTwoLetterHashtag(t *testing.T) {
 
 	hashtags = matches.ComputeHashTags(1)
 	require.Equal(t, 1, len(hashtags))
-	assert.Equal(t, "B", hashtags[0].String)
+	assert.Equal(t, "B", hashtags[0].Tag)
 	assert.Equal(t, 1, hashtags[0].Words)
 
 	hashtags = matches.ComputeHashTags(0)
 	require.Equal(t, 1, len(hashtags))
-	assert.Equal(t, "AB", hashtags[0].String)
+	assert.Equal(t, "AB", hashtags[0].Tag)
 	assert.Equal(t, 2, hashtags[0].Words)
 }
 
@@ -111,14 +111,14 @@ func TestTwoLetterSingleWordHashtag(t *testing.T) {
 
 	hashtags = matches.ComputeHashTags(1)
 	require.Equal(t, 1, len(hashtags))
-	assert.Equal(t, "B", hashtags[0].String)
+	assert.Equal(t, "B", hashtags[0].Tag)
 	assert.Equal(t, 1, hashtags[0].Words)
 
 	hashtags = matches.ComputeHashTags(0)
 	require.Equal(t, 2, len(hashtags))
-	assert.Equal(t, "Ab", hashtags[0].String)
+	assert.Equal(t, "Ab", hashtags[0].Tag)
 	assert.Equal(t, 1, hashtags[0].Words)
-	assert.Equal(t, "AB", hashtags[1].String)
+	assert.Equal(t, "AB", hashtags[1].Tag)
 	assert.Equal(t, 2, hashtags[1].Words)
 }
 
@@ -130,27 +130,27 @@ func TestTwoLetterTwoWordsHashtag(t *testing.T) {
 	var hashtags []*HashTag
 
 	expected := []*HashTag{
-		&HashTag{String: "Bc", Words: 1},
-		&HashTag{String: "BC", Words: 2},
+		&HashTag{Tag: "Bc", Words: 1},
+		&HashTag{Tag: "BC", Words: 2},
 	}
 	hashtags = matches.ComputeHashTags(1)
 
 	require.Equal(t, 2, len(hashtags))
 	for i, h := range hashtags {
-		assert.Equal(t, expected[i].String, h.String)
+		assert.Equal(t, expected[i].Tag, h.Tag)
 		assert.Equal(t, expected[i].Words, h.Words)
 	}
 
 	hashtags = matches.ComputeHashTags(0)
 	expected = []*HashTag{
-		&HashTag{String: "Abc", Words: 1},
-		&HashTag{String: "AbC", Words: 2},
-		&HashTag{String: "ABc", Words: 2},
-		&HashTag{String: "ABC", Words: 3},
+		&HashTag{Tag: "Abc", Words: 1},
+		&HashTag{Tag: "AbC", Words: 2},
+		&HashTag{Tag: "ABc", Words: 2},
+		&HashTag{Tag: "ABC", Words: 3},
 	}
 	require.Equal(t, len(expected), len(hashtags))
 	for i, h := range hashtags {
-		assert.Equal(t, expected[i].String, h.String)
+		assert.Equal(t, expected[i].Tag, h.Tag)
 		assert.Equal(t, expected[i].Words, h.Words)
 	}
 }
@@ -163,14 +163,14 @@ func TestTwoLetterTwoWordsHashtagIterative(t *testing.T) {
 
 	hashtags := matches.ComputeHashTagsIterative(0)
 	expected := []*HashTag{
-		&HashTag{String: "Abc", Words: 1},
-		&HashTag{String: "AbC", Words: 2},
-		&HashTag{String: "ABc", Words: 2},
-		&HashTag{String: "ABC", Words: 3},
+		&HashTag{Tag: "Abc", Words: 1},
+		&HashTag{Tag: "ABc", Words: 2},
+		&HashTag{Tag: "AbC", Words: 2},
+		&HashTag{Tag: "ABC", Words: 3},
 	}
 	require.Equal(t, len(expected), len(hashtags))
 	for i, h := range hashtags {
-		assert.Equal(t, expected[i].String, h.String)
+		assert.Equal(t, expected[i].Tag, h.Tag)
 		assert.Equal(t, expected[i].Words, h.Words)
 	}
 }
@@ -184,14 +184,35 @@ func TestSingleWordHashtags(t *testing.T) {
 
 	hashtags := matches.ComputeHashTags(0)
 	expected := []*HashTag{
-		&HashTag{String: "Cleaner", Words: 1},
-		&HashTag{String: "CLeaner", Words: 2},
-		&HashTag{String: "CleanER", Words: 3},
-		&HashTag{String: "CLEANER", Words: 7},
+		&HashTag{Tag: "Cleaner", Words: 1},
+		&HashTag{Tag: "CLeaner", Words: 2},
+		&HashTag{Tag: "CleanER", Words: 3},
+		&HashTag{Tag: "CLEANER", Words: 7},
 	}
 	require.Equal(t, len(expected), len(hashtags))
 	for i, h := range hashtags {
-		assert.Equal(t, expected[i].String, h.String)
+		assert.Equal(t, expected[i].Tag, h.Tag)
+		assert.Equal(t, expected[i].Words, h.Words)
+	}
+}
+
+func TestSingleWordHashtagsIterative(t *testing.T) {
+	trie := buildTrie([]string{"cleaner", "clean", "leaner"})
+
+	s := "cleaner"
+	trieMatches := trie.MatchString(s)
+	matches := NewStringMatches(s, trieMatches)
+
+	hashtags := matches.ComputeHashTagsIterative(0)
+	expected := []*HashTag{
+		&HashTag{Tag: "Cleaner", Words: 1},
+		&HashTag{Tag: "CLeaner", Words: 2},
+		&HashTag{Tag: "CleanER", Words: 3},
+		&HashTag{Tag: "CLEANER", Words: 7},
+	}
+	require.Equal(t, len(expected), len(hashtags))
+	for i, h := range hashtags {
+		assert.Equal(t, expected[i].Tag, h.Tag)
 		assert.Equal(t, expected[i].Words, h.Words)
 	}
 }

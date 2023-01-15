@@ -71,7 +71,7 @@ var ReplCmd = &cobra.Command{
 
 			// show at most 5 results
 			for _, hashTag := range hashTags[:5] {
-				fmt.Printf("%d - %s\n", hashTag.Words, hashTag.String)
+				fmt.Printf("%d - %s\n", hashTag.Words, hashTag.Tag)
 			}
 		}
 	},

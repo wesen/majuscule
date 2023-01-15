@@ -27,7 +27,7 @@ message CompleteResponses {
 }
 
 message HashTag {
-  string name = 1;
+  string tag = 1;
   int32 count = 2;
 }
 

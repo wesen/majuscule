@@ -51,9 +51,7 @@ func (s *Server) computeHashtags(input string, count int) CompleteResponse {
 
 	start := time.Now()
 
-	var trieMatches []*ahocorasick.Match
-
-	trieMatches = s.trie.MatchString(input)
+	trieMatches := s.trie.MatchString(input)
 	elapsed := time.Since(start)
 
 	log.Debug().Int64("duration_ns", elapsed.Nanoseconds()).
