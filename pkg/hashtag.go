@@ -3,13 +3,24 @@ package pkg
 import (
 	"fmt"
 	ahocorasick "github.com/BobuSumisu/aho-corasick"
+	"math"
 	"sort"
 	"strings"
 )
 
+type Match struct {
+	Match string
+	Pos   int
+	Score float64
+}
+
+func (m *Match) String() string {
+	return fmt.Sprintf("%s (%d) - %f", m.Match, m.Pos, m.Score)
+}
+
 type StringMatches struct {
 	String     string
-	AllMatches [][]*ahocorasick.Match
+	AllMatches [][]*Match
 	cache      [][]*HashTag
 }
 
@@ -18,13 +29,16 @@ func WordScore(word string, frequency map[string]int) float64 {
 
 	l := float64(len(word))
 
-	freq, ok := frequency[word]
-	if !ok {
-		freq = 0
+	freq := 0
+	if frequency != nil {
+		f, ok := frequency[word]
+		if ok {
+			freq = f
+		}
 	}
 
 	lengthWeight := 1.0
-	frequencyWeight := 1500.0
+	frequencyWeight := 800.0
 
 	freqFactor := (float64(freq) / 1000000.0) * frequencyWeight
 	lengthFactor := l * l * lengthWeight
@@ -32,64 +46,105 @@ func WordScore(word string, frequency map[string]int) float64 {
 	return score
 }
 
-func NewStringMatches(s string, matches []*ahocorasick.Match, frequency map[string]int) *StringMatches {
-	matches_ := make([][]*ahocorasick.Match, len(s))
+func NewStringMatches(s string, matches [][]*Match) *StringMatches {
+
+	// we sort the individual matches to have the longest one first (most salient)
+
+	return &StringMatches{
+		s,
+		matches,
+		make([][]*HashTag, len(s)),
+	}
+}
+
+func ComputeMatches(s string, matches []*ahocorasick.Match, frequency map[string]int) [][]*Match {
+	matches_ := make([][]*Match, len(s))
 
 	for _, match := range matches {
 		pos := match.Pos()
 
 		if matches_[pos] == nil {
-			matches_[pos] = make([]*ahocorasick.Match, 0)
+			matches_[pos] = make([]*Match, 0)
 		}
-		matches_[pos] = append(matches_[pos], match)
-	}
-
-	// we sort the individual matches to have the longest one first (most salient)
-	for _, ms_ := range matches_ {
-		sort.Slice(ms_, func(i, j int) bool {
-			return WordScore(ms_[i].MatchString(), frequency) > WordScore(ms_[j].MatchString(), frequency)
+		matches_[pos] = append(matches_[pos], &Match{
+			Match: match.MatchString(),
+			Pos:   int(match.Pos()),
+			Score: WordScore(match.MatchString(), frequency),
 		})
 	}
 
-	return &StringMatches{
-		s,
-		matches_,
-		make([][]*HashTag, len(s)),
+	for _, ms_ := range matches_ {
+		sort.Slice(ms_, func(i, j int) bool {
+			return ms_[i].Score > ms_[j].Score
+		})
 	}
+	return matches_
 }
 
 type HashTag struct {
-	Tag   string
-	Words int
+	Tag    string
+	Words  int
+	Scores []float64
+}
+
+func NewHashTag(tag string, scores []float64) *HashTag {
+	return &HashTag{
+		Tag:    tag,
+		Words:  len(scores),
+		Scores: scores,
+	}
 }
 
 // Score computes the score for the hashtag, lower is better
-func (ht *HashTag) Score() int {
-	return ht.Words
+func (ht *HashTag) Score() float64 {
+	// the sum of the scores
+	score := 0.0
+	for _, s := range ht.Scores {
+		score += s
+	}
+	return score
 }
 
 func (ht *HashTag) String() string {
-	return fmt.Sprintf("%s (%d)", ht.Tag, ht.Words)
+	scoresString := make([]string, len(ht.Scores))
+	for i, score := range ht.Scores {
+		scoresString[i] = fmt.Sprintf("%f", score)
+	}
+	return fmt.Sprintf("%s (%d) [%s]", ht.Tag, ht.Words, strings.Join(scoresString, ","))
+}
+
+func (ht *HashTag) AppendMatch(match string, score float64) *HashTag {
+	return NewHashTag(
+		ht.Tag+capitalize(match),
+		append(ht.Scores, score),
+	)
+}
+
+func (ht *HashTag) AppendMatchWithSuffix(match string, matchScore float64, suffix *HashTag) *HashTag {
+	return NewHashTag(
+		ht.Tag+capitalize(match)+suffix.Tag,
+		append(append(ht.Scores, matchScore), suffix.Scores...),
+	)
 }
 
 type toGoStackEntry struct {
-	prefix        string
-	wordsInPrefix int
-	matchString   string
-	pos           int
+	prefix      *HashTag
+	matchString string
+	pos         int
+	score       float64
 }
 
-func NewToGoStackEntry(prefix string, wordsInPrefix int, match *ahocorasick.Match) *toGoStackEntry {
+func NewToGoStackEntry(prefix *HashTag, match *Match) *toGoStackEntry {
 	return &toGoStackEntry{
 		prefix,
-		wordsInPrefix,
-		match.MatchString(),
-		int(match.Pos()),
+		match.Match,
+		match.Pos,
+		match.Score,
 	}
 }
 
 func (e *toGoStackEntry) String() string {
-	return fmt.Sprintf("{prefix: %s (%d), match %s (%d)}", e.prefix, e.wordsInPrefix, e.matchString, e.pos)
+	return fmt.Sprintf("{prefix: %s, match %s (%d)}", e.prefix, e.matchString, e.pos)
 }
 
 type toGoStack []*toGoStackEntry
@@ -117,9 +172,11 @@ func (sm *StringMatches) createInitialToGoStack() *toGoStack {
 
 	// we need to append sm.AllMatches[0] in reverse order to the list,
 	// so that we have the highest weight on top of the stack
-	for i := len(sm.AllMatches[0]) - 1; i >= 0; i-- {
-		match := sm.AllMatches[0][i]
-		stack.Push(NewToGoStackEntry("", 0, match))
+	if len(sm.AllMatches) > 0 {
+		for i := len(sm.AllMatches[0]) - 1; i >= 0; i-- {
+			match := sm.AllMatches[0][i]
+			stack.Push(NewToGoStackEntry(NewHashTag("", []float64{}), match))
+		}
 	}
 
 	return &stack
@@ -127,7 +184,7 @@ func (sm *StringMatches) createInitialToGoStack() *toGoStack {
 
 type hashTagStep struct {
 	cache         map[int][]*HashTag
-	cacheMaxScore map[int]int
+	cacheMaxScore map[int]float64
 	toGoStack     *toGoStack
 	curEntry      *toGoStackEntry
 	curPos        int
@@ -163,13 +220,14 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 	//
 	// BRAINSTORM: we also need to store the fact that we might have explored this entry entirely,
 	// instead of having cutoff our search because of a threshold depth.
-	cacheMaxScore := make(map[int]int, len(sm.String))
+	cacheMaxScore := make(map[int]float64, len(sm.String))
 
 	// the maximum number of words new entries should have,
 	// this is the maximum number of words in ret, if ret is bigger than maxResults,
 	// other it is just the length of the string, since each letter can be a single word
 	// TODO: this should actually be the score, but for, score is just word count
-	maxScore := len(sm.String)
+	// set maxScore to infinity
+	maxScore := math.Inf(1)
 
 	recordedSteps := make([]*hashTagStep, 0)
 
@@ -178,15 +236,15 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 		curPos := cur.pos
 
 		capitalizedSuffix := capitalize(matchString) + suffix.Tag
-
-		newHashTag := &HashTag{
-			Tag:   cur.prefix + capitalizedSuffix,
-			Words: cur.wordsInPrefix + 1 + suffix.Words,
-		}
+		newHashTag := cur.prefix.AppendMatchWithSuffix(matchString, cur.score, suffix)
 
 		suffixHashTag := &HashTag{
 			Tag:   capitalizedSuffix,
 			Words: 1 + suffix.Words,
+			Scores: append(
+				[]float64{cur.score},
+				suffix.Scores...,
+			),
 		}
 
 		_, ok := cache[curPos]
@@ -281,7 +339,8 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 				// append sm.AllMatches[nextPos] in reverse order to have the highest weight on top
 				for i := len(sm.AllMatches[nextPos]) - 1; i >= 0; i-- {
 					match := sm.AllMatches[nextPos][i]
-					nextToGo := NewToGoStackEntry(cur.prefix+capitalize(matchString), cur.wordsInPrefix+1, match)
+					newHashTag := cur.prefix.AppendMatch(capitalize(matchString), cur.score)
+					nextToGo := NewToGoStackEntry(newHashTag, match)
 					toGo.Push(nextToGo)
 				}
 			}
@@ -289,10 +348,12 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 	}
 
 	sort.Slice(ret, func(i, j int) bool {
+		// score here could be score of the individual words, but inverse to the total count of words, or something like that ?
+		// or maybe just average score of all words / number of words ?
 		if ret[i].Score() == ret[j].Score() {
 			return ret[i].Tag > ret[j].Tag
 		} else {
-			return ret[i].Score() < ret[j].Score()
+			return ret[i].Score() > ret[j].Score()
 		}
 	})
 
@@ -305,7 +366,7 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 func recordStep(
 	cache map[int][]*HashTag,
 	toGo *toGoStack,
-	cacheMaxScore map[int]int,
+	cacheMaxScore map[int]float64,
 	cur *toGoStackEntry,
 	curPos int,
 	matchString string,
@@ -320,7 +381,7 @@ func recordStep(
 	toGoStackCopy := make(toGoStack, toGo.Len())
 	copy(toGoStackCopy, *toGo)
 
-	cacheMaxScoreCopy := make(map[int]int, len(cacheMaxScore))
+	cacheMaxScoreCopy := make(map[int]float64, len(cacheMaxScore))
 	for k, v := range cacheMaxScore {
 		cacheMaxScoreCopy[k] = v
 	}
@@ -362,10 +423,7 @@ func (sm *StringMatches) ComputeHashTags(pos int) []*HashTag {
 
 	if pos >= len(sm.String) {
 		return []*HashTag{
-			&HashTag{
-				"",
-				0,
-			},
+			NewHashTag("", []float64{}),
 		}
 	}
 
@@ -376,7 +434,7 @@ func (sm *StringMatches) ComputeHashTags(pos int) []*HashTag {
 	// we go through all the matches at the current position and try to build a hashtag
 	// and then recurse into the suffix
 	for _, match := range sm.AllMatches[pos] {
-		s := match.MatchString()
+		s := match.Match
 
 		for _, suffix := range sm.ComputeHashTags(pos + len(s)) {
 			// we try to capitalize the first letter of the suffix

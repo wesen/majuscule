@@ -1,0 +1,3 @@
+PoS  = Part of speech (word class)
+Freq = Frequency per million words (in order from the most frequent word to a minimum frequency of 10)
+

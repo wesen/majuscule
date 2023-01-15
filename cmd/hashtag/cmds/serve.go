@@ -21,8 +21,9 @@ type Server struct {
 }
 
 type AhoCorasickMatch struct {
-	Pos  int64  `json:"pos"`
-	Word string `json:"word"`
+	Pos   int     `json:"pos"`
+	Word  string  `json:"word"`
+	Score float64 `json:"score"`
 }
 
 type CompleteResponse struct {
@@ -53,6 +54,7 @@ func (s *Server) computeHashtags(input string, count int) CompleteResponse {
 	start := time.Now()
 
 	trieMatches := s.trie.MatchString(input)
+	matches_ := pkg.ComputeMatches(input, trieMatches, s.frequency)
 	elapsed := time.Since(start)
 
 	log.Debug().Int64("duration_ns", elapsed.Nanoseconds()).
@@ -60,14 +62,14 @@ func (s *Server) computeHashtags(input string, count int) CompleteResponse {
 		Int("trieMatches", len(trieMatches)).
 		Msg("Match")
 
-	matchedStrings := make(map[string]interface{})
-	for _, m := range trieMatches {
-		ms := m.MatchString()
-		results.Matches = append(results.Matches, &AhoCorasickMatch{
-			Pos:  m.Pos(),
-			Word: ms,
-		})
-		matchedStrings[ms] = nil
+	for _, m := range matches_ {
+		for _, w := range m {
+			results.Matches = append(results.Matches, &AhoCorasickMatch{
+				Pos:   w.Pos,
+				Word:  w.Match,
+				Score: w.Score,
+			})
+		}
 	}
 
 	//// code to print out for unit tests
@@ -76,7 +78,7 @@ func (s *Server) computeHashtags(input string, count int) CompleteResponse {
 	//}
 
 	start = time.Now()
-	matches := pkg.NewStringMatches(input, trieMatches, s.frequency)
+	matches := pkg.NewStringMatches(input, matches_)
 	hashTags := matches.SuggestHashtags()
 	if len(hashTags) > count {
 		results.Hashtags = hashTags[:count]

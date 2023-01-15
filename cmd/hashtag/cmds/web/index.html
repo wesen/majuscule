@@ -62,6 +62,11 @@
 <div id="hashtags-div"></div>
 
 <script>
+    function score(hashtag) {
+        // sum hashtag.score
+        return hashtag.Scores.reduce((a, b) => a + b, 0);
+    }
+
     function updateHashtags() {
         var inputField = document.getElementById("input-field");
         var inputValue = inputField.value;
@@ -79,15 +84,27 @@
                 hashtagsDiv.appendChild(title);
 
                 // create a div for the hashtags
-                var hashtags = document.createElement("div");
+                var hashtags = document.createElement("ul");
                 hashtagsDiv.appendChild(hashtags);
 
+                // sort hashtags by score
+                data.hashtags.sort((a, b) => score(b) - score(a));
                 data.hashtags.forEach((hashtag, idx) => {
+                    var hashtagItem = document.createElement("li");
+
+                    var hashtagScoreList = document.createElement("ul");
+
                     // render Words - Tag
-                    const {Words, Tag} = hashtag;
-                    var hashtagP = document.createElement("p");
-                    hashtagP.innerHTML = "" + idx + " - " + Tag + " (" + Words + " words)";
-                    hashtags.appendChild(hashtagP);
+                    const {Words, Tag, Scores} = hashtag;
+                    hashtagItem.innerHTML = "" + idx + " - " + Tag + " (" + Words + " words)";
+
+                    const heuristicScoreItem = document.createElement("li");
+                    heuristicScoreItem.innerHTML = "Heuristic Score: " + score(hashtag).toFixed(2);
+                    heuristicScoreItem.innerHTML += " (" + Scores.map(s => s.toFixed(2)).join(", ") + ")";
+                    hashtagScoreList.appendChild(heuristicScoreItem);
+                    hashtagItem.appendChild(hashtagScoreList);
+
+                    hashtags.appendChild(hashtagItem);
                 });
 
                 // add title "substring matches"
@@ -97,13 +114,13 @@
 
                 var matchesList = document.createElement("ul");
                 // sort by length of match.word
-                data.matches.sort((a, b) => b.word.length - a.word.length);
+                data.matches.sort((a, b) => b.score - a.score);
                 data.matches.forEach(function (match) {
                     var matchItem = document.createElement("li");
                     matchItem.innerHTML = inputValue.substring(0, match.pos) +
                         (match.pos !== 0 ? "&nbsp;" : "") + "<b>" + match.word + "</b>&nbsp;" +
                         inputValue.substring(match.pos + match.word.length) +
-                        " (" + match.word + " at position " + match.pos + ")";
+                        " (" + match.word + " at position " + match.pos + " with score " + match.score + ")";
                     matchesList.appendChild(matchItem);
                 });
                 hashtagsDiv.appendChild(matchesList);
