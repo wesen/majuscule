@@ -1,0 +1,73 @@
+openapi: 3.0.2
+info:
+  title: Complete API
+  version: 1.0.0
+paths:
+  /complete:
+    post:
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteRequest'
+      responses:
+        '200':
+          description: Success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompleteResponses'
+components:
+  schemas:
+    CompleteRequest:
+      type: object
+      properties:
+        inputs:
+          type: array
+          items:
+            type: string
+        count:
+          type: integer
+        debug:
+          type: boolean
+    CompleteResponse:
+      type: object
+      properties:
+        input:
+          type: string
+        count:
+          type: integer
+        hashtags:
+          type: array
+          items:
+            $ref: '#/components/schemas/HashTag'
+        matches:
+          type: array
+          items:
+            $ref: '#/components/schemas/AhoCorasickMatch'
+        match_duration_ns:
+          type: integer
+        suggest_duration_ns:
+          type: integer
+    CompleteResponses:
+      type: object
+      properties:
+        response:
+          type: array
+          items:
+            $ref: '#/components/schemas/CompleteResponse'
+    HashTag:
+      type: object
+      properties:
+        name:
+          type: string
+        count:
+          type: integer
+    AhoCorasickMatch:
+      type: object
+      properties:
+        pos:
+          type: integer
+        word:
+          type: string

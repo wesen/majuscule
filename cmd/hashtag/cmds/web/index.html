@@ -1,0 +1,114 @@
+<html>
+<head>
+    <style>
+        /* Add some vaporwave-style colors and styling */
+        body {
+            font-family: 'Lato', sans-serif; /* or any other font of your choice */
+            background-color: #8B00FF;
+            color: #00E5FF;
+        }
+
+        pre {
+            font-size: 50px;
+        }
+
+        input {
+            background-color: #00E5FF;
+            color: #8B00FF;
+            padding: 8px;
+            font-size: 20px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        label {
+            font-weight: bold;
+            font-size: 25px;
+            margin-right: 10px;
+        }
+
+        #hashtags-div {
+            margin-top: 20px;
+        }
+
+        #hashtags-div p {
+            margin: 5px;
+        }
+
+        select {
+            background-color: #00E5FF;
+            color: #8B00FF;
+            padding: 8px;
+            font-size: 20px;
+            border-radius: 5px;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+<pre>
+┬ ┬┌─┐┌─┐┬ ┬┌┬┐┌─┐┌─┐┌─┐
+├─┤├─┤└─┐├─┤ │ ├─┤│ ┬└─┐
+┴ ┴┴ ┴└─┘┴ ┴ ┴ ┴ ┴└─┘└─┘
+</pre>
+<label for="input-field">Enter Text:</label>
+<input type="text" id="input-field" oninput="updateHashtags()">
+<select id="count-select" onchange="updateHashtags()">
+    <option value="5">5</option>
+    <option value="10">10</option>
+    <option value="15">15</option>
+    <option value="20">20</option>
+</select>
+<div id="hashtags-div"></div>
+
+<script>
+    function updateHashtags() {
+        var inputField = document.getElementById("input-field");
+        var inputValue = inputField.value;
+        var countSelect = document.getElementById("count-select");
+        var count = countSelect.value;
+        var hashtagsDiv = document.getElementById("hashtags-div");
+
+        fetch(`/complete?input=${inputValue}&count=${count}&debug=true`)
+            .then(response => response.json())
+            .then(data => {
+                hashtagsDiv.innerHTML = "";
+                // add title "hashtag suggestions"
+                var title = document.createElement("h2");
+                title.innerHTML = "Hashtag Suggestions";
+                hashtagsDiv.appendChild(title);
+
+                // create a div for the hashtags
+                var hashtags = document.createElement("div");
+                hashtagsDiv.appendChild(hashtags);
+
+                data.hashtags.forEach((hashtag, idx) => {
+                    // render Words - String
+                    const {Words, String} = hashtag;
+                    var hashtagP = document.createElement("p");
+                    hashtagP.innerHTML = "" + idx + " - " + String + " (" + Words + " words)";
+                    hashtags.appendChild(hashtagP);
+                });
+
+                // add title "substring matches"
+                var title = document.createElement("h2");
+                title.innerHTML = "Substring Matches";
+                hashtagsDiv.appendChild(title);
+
+                var matchesList = document.createElement("ul");
+                // sort by length of match.word
+                data.matches.sort((a, b) => b.word.length - a.word.length);
+                data.matches.forEach(function (match) {
+                    var matchItem = document.createElement("li");
+                    matchItem.innerHTML = inputValue.substring(0, match.pos) +
+                        (match.pos !== 0 ? "&nbsp;" : "") + "<b>" + match.word + "</b>&nbsp;" +
+                        inputValue.substring(match.pos + match.word.length) +
+                        " (" + match.word + " at position " + match.pos + ")";
+                    matchesList.appendChild(matchItem);
+                });
+                hashtagsDiv.appendChild(matchesList);
+            });
+    }
+</script>
+</body>
+</html>
