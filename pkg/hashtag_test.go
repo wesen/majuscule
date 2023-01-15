@@ -81,7 +81,7 @@ func TestSingleLetterHashtag(t *testing.T) {
 	matches := NewStringMatches(s, trieMatches)
 	hashtags := matches.ComputeHashTags(0)
 	require.Equal(t, 1, len(hashtags))
-	assert.Equal(t, "a", hashtags[0].String)
+	assert.Equal(t, "A", hashtags[0].String)
 }
 
 func TestTwoLetterHashtag(t *testing.T) {
@@ -93,12 +93,12 @@ func TestTwoLetterHashtag(t *testing.T) {
 
 	hashtags = matches.ComputeHashTags(1)
 	require.Equal(t, 1, len(hashtags))
-	assert.Equal(t, "b", hashtags[0].String)
+	assert.Equal(t, "B", hashtags[0].String)
 	assert.Equal(t, 1, hashtags[0].Words)
 
 	hashtags = matches.ComputeHashTags(0)
 	require.Equal(t, 1, len(hashtags))
-	assert.Equal(t, "ab", hashtags[0].String)
+	assert.Equal(t, "AB", hashtags[0].String)
 	assert.Equal(t, 2, hashtags[0].Words)
 }
 
@@ -111,14 +111,14 @@ func TestTwoLetterSingleWordHashtag(t *testing.T) {
 
 	hashtags = matches.ComputeHashTags(1)
 	require.Equal(t, 1, len(hashtags))
-	assert.Equal(t, "b", hashtags[0].String)
+	assert.Equal(t, "B", hashtags[0].String)
 	assert.Equal(t, 1, hashtags[0].Words)
 
 	hashtags = matches.ComputeHashTags(0)
 	require.Equal(t, 2, len(hashtags))
 	assert.Equal(t, "Ab", hashtags[0].String)
 	assert.Equal(t, 1, hashtags[0].Words)
-	assert.Equal(t, "ab", hashtags[1].String)
+	assert.Equal(t, "AB", hashtags[1].String)
 	assert.Equal(t, 2, hashtags[1].Words)
 }
 
@@ -131,7 +131,7 @@ func TestTwoLetterTwoWordsHashtag(t *testing.T) {
 
 	expected := []*HashTag{
 		&HashTag{String: "Bc", Words: 1},
-		&HashTag{String: "bc", Words: 2},
+		&HashTag{String: "BC", Words: 2},
 	}
 	hashtags = matches.ComputeHashTags(1)
 
@@ -144,9 +144,9 @@ func TestTwoLetterTwoWordsHashtag(t *testing.T) {
 	hashtags = matches.ComputeHashTags(0)
 	expected = []*HashTag{
 		&HashTag{String: "Abc", Words: 1},
-		&HashTag{String: "Abc", Words: 2},
-		&HashTag{String: "aBc", Words: 2},
-		&HashTag{String: "abc", Words: 3},
+		&HashTag{String: "AbC", Words: 2},
+		&HashTag{String: "ABc", Words: 2},
+		&HashTag{String: "ABC", Words: 3},
 	}
 	require.Equal(t, len(expected), len(hashtags))
 	for i, h := range hashtags {
@@ -165,9 +165,9 @@ func TestSingleWordHashtags(t *testing.T) {
 	hashtags := matches.ComputeHashTags(0)
 	expected := []*HashTag{
 		&HashTag{String: "Cleaner", Words: 1},
-		&HashTag{String: "cLeaner", Words: 2},
-		&HashTag{String: "CleanEr", Words: 3},
-		&HashTag{String: "cleaner", Words: 7},
+		&HashTag{String: "CLeaner", Words: 2},
+		&HashTag{String: "CleanER", Words: 3},
+		&HashTag{String: "CLEANER", Words: 7},
 	}
 	require.Equal(t, len(expected), len(hashtags))
 	for i, h := range hashtags {
