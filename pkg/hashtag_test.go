@@ -155,6 +155,26 @@ func TestTwoLetterTwoWordsHashtag(t *testing.T) {
 	}
 }
 
+func TestTwoLetterTwoWordsHashtagIterative(t *testing.T) {
+	trie := buildTrie([]string{"abc", "ab", "bc"})
+	s := "abc"
+	trieMatches := trie.MatchString(s)
+	matches := NewStringMatches(s, trieMatches)
+
+	hashtags := matches.ComputeHashTagsIterative(0)
+	expected := []*HashTag{
+		&HashTag{String: "Abc", Words: 1},
+		&HashTag{String: "AbC", Words: 2},
+		&HashTag{String: "ABc", Words: 2},
+		&HashTag{String: "ABC", Words: 3},
+	}
+	require.Equal(t, len(expected), len(hashtags))
+	for i, h := range hashtags {
+		assert.Equal(t, expected[i].String, h.String)
+		assert.Equal(t, expected[i].Words, h.Words)
+	}
+}
+
 func TestSingleWordHashtags(t *testing.T) {
 	trie := buildTrie([]string{"cleaner", "clean", "leaner"})
 
