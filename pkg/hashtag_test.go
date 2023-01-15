@@ -58,7 +58,7 @@ func TestSingleWordMatches(t *testing.T) {
 	trie := buildComplexTrie()
 	s := "cleaner"
 	trieMatches := trie.MatchString(s)
-	matches := NewStringMatches(s, trieMatches)
+	matches := NewStringMatches(s, trieMatches, nil)
 
 	allMatches := matches.AllMatches
 	assert.Equal(t, "cleaner", allMatches[0][0].MatchString())
@@ -78,7 +78,7 @@ func TestSingleLetterHashtag(t *testing.T) {
 	trie := buildTrie([]string{})
 	s := "a"
 	trieMatches := trie.MatchString(s)
-	matches := NewStringMatches(s, trieMatches)
+	matches := NewStringMatches(s, trieMatches, nil)
 	hashtags := matches.ComputeHashTags(0)
 	require.Equal(t, 1, len(hashtags))
 	assert.Equal(t, "A", hashtags[0].Tag)
@@ -88,7 +88,7 @@ func TestTwoLetterHashtag(t *testing.T) {
 	trie := buildTrie([]string{})
 	s := "ab"
 	trieMatches := trie.MatchString(s)
-	matches := NewStringMatches(s, trieMatches)
+	matches := NewStringMatches(s, trieMatches, nil)
 	var hashtags []*HashTag
 
 	hashtags = matches.ComputeHashTags(1)
@@ -106,7 +106,7 @@ func TestTwoLetterSingleWordHashtag(t *testing.T) {
 	trie := buildTrie([]string{"ab"})
 	s := "ab"
 	trieMatches := trie.MatchString(s)
-	matches := NewStringMatches(s, trieMatches)
+	matches := NewStringMatches(s, trieMatches, nil)
 	var hashtags []*HashTag
 
 	hashtags = matches.ComputeHashTags(1)
@@ -126,7 +126,7 @@ func TestTwoLetterTwoWordsHashtag(t *testing.T) {
 	trie := buildTrie([]string{"abc", "ab", "bc"})
 	s := "abc"
 	trieMatches := trie.MatchString(s)
-	matches := NewStringMatches(s, trieMatches)
+	matches := NewStringMatches(s, trieMatches, nil)
 	var hashtags []*HashTag
 
 	expected := []*HashTag{
@@ -159,7 +159,7 @@ func TestTwoLetterTwoWordsHashtagIterative(t *testing.T) {
 	trie := buildTrie([]string{"abc", "ab", "bc"})
 	s := "abc"
 	trieMatches := trie.MatchString(s)
-	matches := NewStringMatches(s, trieMatches)
+	matches := NewStringMatches(s, trieMatches, nil)
 
 	hashtags := matches.ComputeHashTagsIterative(0)
 	expected := []*HashTag{
@@ -180,7 +180,7 @@ func TestSingleWordHashtags(t *testing.T) {
 
 	s := "cleaner"
 	trieMatches := trie.MatchString(s)
-	matches := NewStringMatches(s, trieMatches)
+	matches := NewStringMatches(s, trieMatches, nil)
 
 	hashtags := matches.ComputeHashTags(0)
 	expected := []*HashTag{
@@ -201,7 +201,7 @@ func TestSingleWordHashtagsIterative(t *testing.T) {
 
 	s := "cleaner"
 	trieMatches := trie.MatchString(s)
-	matches := NewStringMatches(s, trieMatches)
+	matches := NewStringMatches(s, trieMatches, nil)
 
 	hashtags := matches.ComputeHashTagsIterative(0)
 	expected := []*HashTag{

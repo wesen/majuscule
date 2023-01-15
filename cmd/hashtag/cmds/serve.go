@@ -15,8 +15,9 @@ import (
 )
 
 type Server struct {
-	trie *ahocorasick.Trie
-	port string
+	trie      *ahocorasick.Trie
+	port      string
+	frequency map[string]int
 }
 
 type AhoCorasickMatch struct {
@@ -75,7 +76,7 @@ func (s *Server) computeHashtags(input string, count int) CompleteResponse {
 	//}
 
 	start = time.Now()
-	matches := pkg.NewStringMatches(input, trieMatches)
+	matches := pkg.NewStringMatches(input, trieMatches, s.frequency)
 	hashTags := matches.SuggestHashtags()
 	if len(hashTags) > count {
 		results.Hashtags = hashTags[:count]
@@ -184,12 +185,19 @@ var ServeCmd = &cobra.Command{
 		dicts, err := cmd.Flags().GetStringSlice("dict")
 		cobra.CheckErr(err)
 
+		frequencyPath, err := cmd.Flags().GetString("frequency")
+		cobra.CheckErr(err)
+
 		trie, err := pkg.BuildTrieFromFiles(dicts)
 		cobra.CheckErr(err)
 
+		frequency, err := pkg.LoadWordFrequencies(frequencyPath)
+		cobra.CheckErr(err)
+
 		s := &Server{
-			trie: trie,
-			port: port,
+			trie:      trie,
+			frequency: frequency,
+			port:      port,
 		}
 
 		err = s.Run()

@@ -59,7 +59,7 @@ var ReplCmd = &cobra.Command{
 			start = time.Now()
 			iterCount = 1
 			for i := 0; i < iterCount; i++ {
-				matches := pkg.NewStringMatches(s, trieMatches)
+				matches := pkg.NewStringMatches(s, trieMatches, nil)
 				hashTags = matches.SuggestHashtags()
 			}
 			elapsed = time.Since(start)

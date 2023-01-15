@@ -13,7 +13,26 @@ type StringMatches struct {
 	cache      [][]*HashTag
 }
 
-func NewStringMatches(s string, matches []*ahocorasick.Match) *StringMatches {
+func WordScore(word string, frequency map[string]int) float64 {
+	// frequency is frequency / million
+
+	l := float64(len(word))
+
+	freq, ok := frequency[word]
+	if !ok {
+		freq = 0
+	}
+
+	lengthWeight := 1.0
+	frequencyWeight := 1500.0
+
+	freqFactor := (float64(freq) / 1000000.0) * frequencyWeight
+	lengthFactor := l * l * lengthWeight
+	score := lengthFactor + freqFactor
+	return score
+}
+
+func NewStringMatches(s string, matches []*ahocorasick.Match, frequency map[string]int) *StringMatches {
 	matches_ := make([][]*ahocorasick.Match, len(s))
 
 	for _, match := range matches {
@@ -28,7 +47,7 @@ func NewStringMatches(s string, matches []*ahocorasick.Match) *StringMatches {
 	// we sort the individual matches to have the longest one first (most salient)
 	for _, ms_ := range matches_ {
 		sort.Slice(ms_, func(i, j int) bool {
-			return len(ms_[i].Match()) > len(ms_[j].Match())
+			return WordScore(ms_[i].MatchString(), frequency) > WordScore(ms_[j].MatchString(), frequency)
 		})
 	}
 
