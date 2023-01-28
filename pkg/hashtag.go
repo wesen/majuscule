@@ -271,8 +271,14 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 		}
 	}
 
+	maxLen := 400
+
 	for {
 		if toGo.Len() == 0 {
+			break
+		}
+
+		if len(ret) > maxLen {
 			break
 		}
 
@@ -289,8 +295,8 @@ func (sm *StringMatches) ComputeHashTagsIterative(maxResults int) []*HashTag {
 		nextPos := curPos + len(matchString)
 
 		// record step
-		recordedStep := recordStep(cache, toGo, cacheMaxScore, cur, curPos, matchString, nextPos)
-		recordedSteps = append(recordedSteps, recordedStep)
+		//recordedStep := recordStep(cache, toGo, cacheMaxScore, cur, curPos, matchString, nextPos)
+		//recordedSteps = append(recordedSteps, recordedStep)
 
 		// we now explore all the suffix matches at the newPos
 

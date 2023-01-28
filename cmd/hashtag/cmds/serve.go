@@ -58,6 +58,11 @@ func (s *Server) computeHashtags(input string, count int) CompleteResponse {
 		Matches:  make([]*AhoCorasickMatch, 0),
 	}
 
+	// cheap ass limiting
+	if len(input) > 60 {
+		return results
+	}
+
 	start := time.Now()
 
 	trieMatches := s.trie.MatchString(input)

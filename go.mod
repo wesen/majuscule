@@ -9,7 +9,7 @@ require (
 	github.com/rs/zerolog v1.28.0
 	github.com/spf13/cobra v1.6.1
 	github.com/stretchr/testify v1.8.1
-	github.com/wesen/glazed v0.1.1-0.20230112012008-15a26e136636
+	github.com/wesen/glazed v0.2.0
 	google.golang.org/protobuf v1.28.1
 )
 
